@@ -135,14 +135,21 @@ class SpotifyHandler:
                     playlist = random.choice(playlists)
                     size = int(len(playlist)*discover_level/10)
                     #We take some of the latests tracks added in the playlist
-                    tracks = self.sp.playlist_tracks(playlist['id'])['items'][-size:]
-                    track = random.choice(tracks)
-                    t_list.append(track['track']['uri'])
-                    #for j in range(unit):
-                        #track = tracks['items'][-unit:]
-                        #track = random.choice(tracks['items'])
-                        #track = tracks[0:1]
-                        #t_list.append(track['uri'])
+                    print(f"Size {size}")
+                    tracks = self.sp.playlist_tracks(playlist['id'])['items']
+
+                    print(f"Tracks {len(tracks)}")
+                    
+                    if size < len(tracks):
+                        tracks = tracks[-size:]
+                    if len(tracks)>0:
+                        track = random.choice(tracks)
+                        t_list.append(track['track']['uri'])
+                        #for j in range(unit):
+                            #track = tracks['items'][-unit:]
+                            #track = random.choice(tracks['items'])
+                            #track = tracks[0:1]
+                            #t_list.append(track['uri'])
         return t_list
 
 ################### ALBUMS  #############################
@@ -231,33 +238,28 @@ class SpotifyHandler:
         total=0
         try:
             total = self.sp.current_user_followed_artists()['artists']['total']
+
+            if int(total) < limit: limit = int(total)
+        
+            if total>0:
+                for i in range(limit):
+                    indartist = random.randint(0,int(total-1))
+                    print (indartist)
+                    artist = self.sp.current_user_followed_artists(1,after=indartist)['artists']['items'][0]['id']
+                    if artist: 
+                        tracks = self.get_artist_top_tracks(artist)
+                        print (tracks)
+                        if tracks and unit != 0:
+                            for j in range(unit):
+                                track = random.choice(tracks)
+                                t_list.append(track)
+                        else:
+                            t_list.append('spotify:artist:'+artist)
+                            #for j in range(len(tracks['items'])):
+                            #    t_list.append(tracks['items'][j]['uri'])
         except Exception as val_e:
             print(f"Erreur artist : {val_e}")
-
-        if int(total) < limit: limit = int(total)
-        print (limit)
-        print (int(total))
-     
-        if total>0:
-            for i in range(limit):
-                artists = self.sp.current_user_followed_artists(limit=1,after=random.randint(0,int(total-1)))
-                print ("1")
-                try: 
-                    tracks = self.get_artist_top_tracks(artists['artists']['items'][0]['id'])
-                except Exception as val_e: 
-                    print(f"Erreur artist : {val_e}")
-                if unit != 0:
-                    print ("2")                   
-                    for j in range(unit):
-                        print (unit)
-                        track = random.choice(tracks['items'])
-                        print (unit)
-                        t_list.append(track['uri'])
-                        print (track['uri'])
-                else:
-                    t_list.append('spotify:artist:'+artists['artists']['items'][i]['id'])
-                    #for j in range(len(tracks['items'])):
-                    #    t_list.append(tracks['items'][j]['uri'])
+        
         return t_list
 
 ################### FAVORITES AND MISC #############################

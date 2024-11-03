@@ -371,7 +371,7 @@ class O2mToMopidy:
 
                     # Shuffle complete computed tracklist if more than two boxs
                     #self.shuffle_tracklist(current_index + 1, new_length)
-                    if len(self.activeboxs) > 1 and not((option_type == "info") and (new_length - prev_length==1)):
+                    if (len(self.activeboxs) > 1 or box1.option_sort=="shuffle") and not((option_type == "info") and (new_length - prev_length==1)):
                         self.shuffle_tracklist(current_index + 1, new_length)
                     #Move at next place the lastinfo content
                     if ((option_type == "info") and (new_length - prev_length==1)):
@@ -381,51 +381,6 @@ class O2mToMopidy:
         return (length)
 
     def tracklistfill_auto0(self,box,max_results=20,discover_level=5,mode='full'):
-        print (f"DL AUTO : {discover_level}")
-        #GO QUICKLY
-        #self.quicklaunch_auto(1,discover_level)    
-
-        #Variables
-        window = int(round(discover_level / 2))
-        #box = self.dbHandler.get_box_by_option_type('new_mopidy')
-        #box.option_type == 'normal'
-        tracklist_uris= []
-
-        #Albums n=5/30
-        max_result1 = int(round(discover_level*2/30*max_results))
-        #tracklist_uris.append(self.spotifyHandler.get_my_albums_tracks(max_result1,discover_level))
-        if (random.choice([1,2])) == 1:
-            print(f"\nAUTO : Albums {max_result1} tracks\n")
-            self.add_tracks(box, self.spotifyHandler.get_my_albums_tracks(max_result1,discover_level), max_result1, "normal")
-        else:
-            print(f"\nAUTO : Artists {max_result1} tracks\n")
-            self.add_tracks(box, self.spotifyHandler.get_my_artists_tracks(max_result1,discover_level), max_result1, "normal")
-
-        #Playlists n=(-0.2*d+7)/30
-        max_result1 = int(round((-0.2*discover_level+7)/30*max_results))
-        print(f"\nAUTO : Playlist {max_result1} tracks\n")
-        #tracklist_uris.append(self.spotifyHandler.get_playlists_tracks(max_result1,discover_level))
-        self.add_tracks(box, self.spotifyHandler.get_playlists_tracks(max_result1,discover_level), max_result1, "normal")
-
-        #Favorites n=5/30
-        max_result1 = int(round((-0.3*discover_level+8)/30*max_results))
-        print(f"\nAUTO : Fav {max_result1} tracks\n")
-        box1 = self.dbHandler.get_box_by_option_type('favorites')
-        #Spotify
-        if self.username !=None:
-            fav = self.spotifyHandler.get_library_favorite_tracks(max_result1)
-        elif box1 != None:
-            #box=box1
-            fav= self.tracklistappend_box(box1,max_result1)
-        if fav != None:
-            self.add_tracks(box, fav, max_result1, "favorites")
-        #tracklist_uris.append(self.tracklistappend_box(box,max_result1))
-
-        #self.add_tracks(box, tracklist_uris, max_results)
-
-        #return tracklist_uris
-
-    def tracklistfill_auto(self,box,max_results=20,discover_level=5,mode='normal'):
         #box is the common and box1,2.. the specific emulation for each activation
         try:
             print (f"DL AUTO : {discover_level}")
@@ -502,6 +457,75 @@ class O2mToMopidy:
             max_result1 = int(round((-0.2*discover_level+7)/30*max_results))
             print(f"\nAUTO : Playlist {max_result1} tracks\n")
             #tracklist_uris.append(self.spotifyHandler.get_playlists_tracks(max_result1,discover_level))
+            self.add_tracks(box, self.spotifyHandler.get_playlists_tracks(max_result1,discover_level), max_result1, "normal")
+            
+            #return tracklist_uris
+        except Exception as val_e: 
+            print(f"Erreur : {val_e}")
+
+    def tracklistfill_auto(self,box,max_results=20,discover_level=5,mode='normal'):
+        #box is the common and box1,2.. the specific emulation for each activation
+        try:
+            print (f"DL AUTO : {discover_level}")
+            
+            #GO QUICKLY
+            self.quicklaunch_auto(1,discover_level,box)
+
+            #Variables
+            window = int(round(discover_level / 2))
+            tracklist_uris= []
+
+            #ADD_TRACKS
+            #News n=(0.5*d)/30
+            max_result1 = int(round((0.7*discover_level)/30*max_results))
+            print(f"\nAUTO : News {max_result1} tracks\n")
+            box1 = self.dbHandler.get_box_by_option_type('new')
+            self.add_tracks(box, self.tracklistappend_box(box1,max_result1), max_result1, "new")
+            
+            #Incoming n=(0.5*d)/30
+            max_result1 = int(round((0.2*discover_level)/30*max_results))
+            print(f"\nAUTO : Incoming {max_result1} tracks\n")
+            box1 = self.dbHandler.get_box_by_option_type('incoming')
+            self.add_tracks(box, self.tracklistappend_box(box1,max_result1), max_result1, "incoming")
+
+            #Favorites n=5/30
+            max_result1 = int(round((-0.3*discover_level+8)/30*max_results))
+            print(f"\nAUTO : Fav {max_result1} tracks\n")
+            box1 = self.dbHandler.get_box_by_option_type('favorites')
+            #Spotify
+            if self.username !=None:
+                fav = self.spotifyHandler.get_library_favorite_tracks(max_result1)
+            elif box1 != None:
+                #box=box1
+                fav= self.tracklistappend_box(box1,max_result1)
+            if fav != None:
+                self.add_tracks(box, fav, max_result1, "favorites")
+
+            if mode=='podcast':
+                #Podcasts ??? n=(0.5*d)/30
+                max_result1 = int(round((0.9*discover_level)/30*max_results))
+                print(f"\nAUTO : Podcasts {max_result1} tracks\n")
+                box1 = self.dbHandler.get_box_by_option_type('podcast')
+                if box1:
+                    self.add_tracks(box, self.tracklistappend_box(box1,max_result1), max_result1, "podcast")
+
+            #APPEND
+            #Common tracks n=(-0.3*d+8)/30
+            max_result1 = int(round((-0.3*discover_level+8)/30*max_results))
+            print(f"\nAUTO : Common {max_result1} tracks\n")
+            self.add_tracks(box, self.get_common_tracks(datetime.datetime.now().hour,window,max_result1), max_result1, "normal")
+            
+            #Albums n=5/30
+            max_result1 = int(round(discover_level*2/30*max_results))
+            if (random.choice([1,2])) == 1:
+                print(f"\nAUTO : Albums {max_result1} tracks\n")
+                self.add_tracks(box, self.spotifyHandler.get_my_albums_tracks(max_result1,discover_level), max_result1, "normal")
+            else:
+                print(f"\nAUTO : Artists {max_result1} tracks\n")
+                self.add_tracks(box, self.spotifyHandler.get_my_artists_tracks(max_result1,discover_level), max_result1, "normal")
+            #Playlists n=(-0.2*d+7)/30
+            max_result1 = int(round((-0.1*discover_level+7)/30*max_results))
+            print(f"\nAUTO : Playlist {max_result1} tracks\n")
             self.add_tracks(box, self.spotifyHandler.get_playlists_tracks(max_result1,discover_level), max_result1, "normal")
             
             #return tracklist_uris
