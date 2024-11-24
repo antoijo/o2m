@@ -64,7 +64,7 @@ COPY  ./o2m.js /usr/local/lib/python3.10/dist-packages/mopidy_iris/static/o2m.js
 COPY  ./app.js /app/app.js
 COPY ./index.html /app/index.html
 #See https://github.com/mopidy/mopidy-spotify/issues/394 for how to get credentials.json
-COPY ./credentials.json /app/credentials.json
+#COPY ./credentials.json /app/credentials.json
 #COPY ./samples/index.html /usr/local/lib/python3.10/dist-packages/mopidy_iris/static/index.html
 
 # Install Python dependencies with caching
@@ -72,8 +72,8 @@ RUN --mount=type=cache,target=/root/.cache \
 python3 -m pip install -r requirements.txt
 
 # Install Rust gstreamer
-ARG URL=https://github.com/kingosticks/gst-plugins-rs-build/releases/download/gst-plugin-spotify_0.13.1-1
-ARG FILE=gst-plugin-spotify_0.13.1-1_amd64.deb
+ARG URL=https://github.com/kingosticks/gst-plugins-rs-build/releases/download/gst-plugin-spotify_0.14.0-alpha.1-1
+ARG FILE=gst-plugin-spotify_0.14.0.alpha.1-1_amd64.deb
 ARG FILE2=libgstspotify.so
 RUN wget $URL/$FILE && dpkg --install $FILE && rm $FILE
 #COPY --from=builder /app/gst-plugins-rs/target/release/libgstspotify.so /app/libgstspotify.so
@@ -81,6 +81,6 @@ RUN wget $URL/$FILE && dpkg --install $FILE && rm $FILE
 
 # install mopidy-spotify
 #RUN python3 -m pip install https://github.com/mopidy/mopidy-spotify/archive/master.zip
-RUN python3 -m pip install Mopidy-Spotify==5.0.0a2
+RUN python3 -m pip install Mopidy-Spotify==5.0.0a3
 
 ENTRYPOINT ["./entrypoint.sh"]

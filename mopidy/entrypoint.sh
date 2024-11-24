@@ -7,7 +7,7 @@ cp index.html /usr/local/lib/python3.10/dist-packages/mopidy_iris/static/index.h
 cp app.js /usr/local/lib/python3.10/dist-packages/mopidy_iris/static/app.js
 # Fix new crendentials OAuth Spotify
 mkdir -p /root/.local/share/mopidy/spotify/credentials-cache
-cp -f credentials.json /root/.local/share/mopidy/spotify/credentials-cache/credentials.json
+#cp -f credentials.json /root/.local/share/mopidy/spotify/credentials-cache/credentials.json
 
 # Get env vars
 O2M_API_PORT=${PORT_O2M_API:-5000}
