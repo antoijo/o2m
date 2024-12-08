@@ -215,7 +215,11 @@ class O2mToMopidy:
                 #print (f"Max results : {max_results}")
             
             tracklist_uris = self.tracklistappend_box(box,max_results)
-            print (tracklist_uris)
+            tracklist_uris = list(util.flatten_list(tracklist_uris))
+            #print('\n'.join(tracklist_uris))
+            lenght0 = len(tracklist_uris)
+            tracklist_uris = tracklist_uris[:lenght0]
+            #print(f"\ntracklist_uris: {tracklist_uris}")
 
             #Let's go to play
             if len(tracklist_uris)>0:
@@ -433,7 +437,7 @@ class O2mToMopidy:
                 #self.one_box_changed(box, max_result1)
                 if box1:
                     self.add_tracks(box, self.tracklistappend_box(box1,max_result1), max_result1, "podcast")
-                #tracklist_uris.append(self.tracklistappend_box(box,max_result1))
+                tracklist_uris.append(self.tracklistappend_box(box,max_result1))
 
             #APPEND
             #Common tracks n=(-0.3*d+8)/30
@@ -469,7 +473,7 @@ class O2mToMopidy:
             print (f"DL AUTO : {discover_level}")
             
             #GO QUICKLY
-            self.quicklaunch_auto(1,discover_level,box)
+            #self.quicklaunch_auto(1,discover_level,box)
 
             #Variables
             window = int(round(discover_level / 2))
@@ -744,8 +748,7 @@ class O2mToMopidy:
         feedurl = uri.split("+")[1]
         #parsing url ?
         par = parse.parse_qs(parse.urlparse(feedurl).query)
-        print (par)
-        print (uri)
+        print(f"par : {par} and uri : {uri}")
         if 'max_results' in par : max_results_pod = int(par['max_results'][0])
         else : max_results_pod = max_results
         #volume=parse.parse_qs(parse.urlparse(feedurl).query)['volume'][0]

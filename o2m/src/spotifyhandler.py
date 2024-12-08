@@ -267,19 +267,17 @@ class SpotifyHandler:
     def get_library_favorite_tracks(self, limit=20, offset=0, market=None):
         #Warning : may probably be the last 20 only
         t_list=[]
-        try: 
-            tracks = self.sp.current_user_saved_tracks()
-        except Exception as val_e: 
-            print(f"Erreur : {val_e}")
-            tracks = self.sp.current_user_saved_tracks()        
-        if tracks:
-            tracks=tracks['items']
-            random.shuffle(tracks)
+        total=0
+        total = self.sp.current_user_saved_tracks()['total']
+        print (total)
+        if (total>0):
             for i in range(limit):
-                print (tracks[i]['track']['uri'])
-                t_list.append(tracks[i]['track']['uri'])
-
+                #print (tracks[i]['track']['uri'])
+                rand = random.randint(0,total)
+                tracks = self.sp.current_user_saved_tracks(limit=1,offset=rand)
+                t_list.append(tracks['items'][0]['track']['uri'])
         return t_list
+
     def get_library_recent_tracks(self, limit):
         #Warning : may probably be the last 20 only
         t_list=[]
