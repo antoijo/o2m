@@ -232,20 +232,38 @@ class SpotifyHandler:
 
         random.shuffle(tracks_uris)
         return tracks_uris[:limit]
-
+    
+    def get_all_followed_artists(self):
+        all_followed = []
+        for offset in range(0, 1000, 50):
+            response = self.sp.current_user_followed_artists(limit=50,after=offset)
+            for artist in response['artists']['items']:
+                name = artist['name']
+                id = artist['id']
+                #all_followed.update({name: id})
+                all_followed.append(id)
+        return all_followed
+    
     def get_my_artists_tracks(self,limit=1,unit=1):
         t_list=[]
         total=0
         try:
-            total = self.sp.current_user_followed_artists()['artists']['total']
-
+            artists = self.get_all_followed_artists()
+            if len(artists)>0:
+                for i in range(limit):
+                    artist = random.choice(artists)
+                    tracks = self.get_artist_top_tracks(artist)
+                    if tracks and unit != 0:
+                        for j in range(unit):
+                            track = random.choice(tracks)
+                            t_list.append(track)
+                    else:
+                        t_list.append('spotify:artist:'+artist)
+            '''total = self.sp.current_user_followed_artists()['artists']['total']
             if int(total) < limit: limit = int(total)
-        
             if total>0:
                 for i in range(limit):
-                    indartist = random.randint(0,int(total-1))
-                    print (indartist)
-                    artist = self.sp.current_user_followed_artists(1,after=indartist)['artists']['items'][0]['id']
+                    artist = self.sp.current_user_followed_artists(limit=1,after=random.randint(0,total-1))['artists']['items'][0]['id']
                     if artist: 
                         tracks = self.get_artist_top_tracks(artist)
                         print (tracks)
@@ -256,7 +274,8 @@ class SpotifyHandler:
                         else:
                             t_list.append('spotify:artist:'+artist)
                             #for j in range(len(tracks['items'])):
-                            #    t_list.append(tracks['items'][j]['uri'])
+                            #    t_list.append(tracks['items'][j]['uri'])'''
+            
         except Exception as val_e:
             print(f"Erreur artist : {val_e}")
         
