@@ -31,6 +31,8 @@ class O2mToMopidy:
     podcast_newest_first = False
     option_sort = "desc"
 
+    avg_stats = {}
+
     def __init__(self, mopidyHandler, configO2m, configMopidy, logging):
         self.configO2M = configO2m["o2m"]
         #self.configMopidy = configMopidy
@@ -80,12 +82,26 @@ class O2mToMopidy:
             self.fix_stats = self.clean_bool(self.configO2M["fix_stats"])
         self.starting_mode(clear=True)
 
+        self.avg_stats = self.stats_average()
+        #Example : print (f"{self.avg_stats['new']['read_count_end']}")
+
 #MISC
     def clean_bool(self,str1):
         try:
             return bool(eval(str(str1).lower().capitalize()))
         except Exception as val_e: 
             return False
+
+    def stats_average(self):
+        stats = {}
+        for i in {'new','normal','incoming','favorites'}:
+            stats2 = {}
+            for j in {'read_end','read_count','read_count_end'}:
+                stats2[j]=self.dbHandler.get_avg_stat(option_type=i,column=j)
+            stats[i]=stats2
+        print("\n\nSTATS")
+        print("\n".join("{} {}".format(k, v) for k, v in stats.items()))
+        return stats
 
 #TAG MANAGEMENT
 

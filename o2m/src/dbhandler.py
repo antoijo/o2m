@@ -165,6 +165,14 @@ class DatabaseHandler():
         else:
             return False
 
+    def get_avg_stat(self, option_type='', column='read_end'):
+        if option_type != '':
+            query = Stats.select(fn.AVG(getattr(Stats, column))).where(Stats.option_type == option_type).scalar()
+        else:
+            query = Stats.select(fn.AVG(getattr(Stats, column))).scalar()
+        #results = self.transform_query_to_list(query)
+        return query
+
     #STATS_RAW
     def create_stat_raw(self, uri, read_time, read_hour, username):
         stat_raw = Stats_Raw.create(uri=uri,read_time=read_time,read_hour=read_hour,username=username)
