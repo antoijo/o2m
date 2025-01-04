@@ -291,36 +291,40 @@ if __name__ == "__main__":
         def track_ended_event(event):
             #Datas
             track = event.tl_track.track
-    
-            box = o2mHandler.get_active_box_by_uri(track.uri)
+            
+            #Box = active_box in memory linked to this uri. Pb if track in many boxes
+            active_box = o2mHandler.get_active_box_by_uri(track.uri)
             option_type = 'new_mopidy'
             library_link = ''
             data = ''
             position = event.time_position
             
-            #Update Dynamic datas linked to Box object and stats
-            if box:
-                if box.data != '': data = box.data
+            #Update Dynamic datas linked to Box object and stats (LIBRARY_LINK, etc)
+            if active_box:
+                if active_box.data != '': data = active_box.data
 
-                if box.option_type != 'new':
-                    if hasattr(box, "option_types") and hasattr(box, "tlids"):
-                        try: option_type = box.option_types[box.tlids.index(event.tl_track.tlid)]
+                if active_box.option_type != 'new':
+                    if hasattr(active_box, "option_types") and hasattr(active_box, "tlids"):
+                        try: option_type = active_box.option_types[active_box.tlids.index(event.tl_track.tlid)]
                         except Exception as val_e: print(f"Error end_track : {val_e}")
-                    if hasattr(box, "library_link") and hasattr(box, "tlids"):
-                        try: library_link = box.library_link[box.tlids.index(event.tl_track.tlid)]
+                    if hasattr(active_box, "library_link") and hasattr(active_box, "tlids"):
+                        try: library_link = active_box.library_link[active_box.tlids.index(event.tl_track.tlid)]
                         except Exception as val_e: print(f"Erreur : {val_e}")
                     #Try / except here to check if dynamic playlist computing is not in competition with first playback finishing...
                     if library_link == '': 
-                        #library_link = box.data
-                        playlist = o2mHandler.mopidyHandler.playlists.lookup(box.data)
-                        data = box.data.split("\n")
+                        #library_link = active_box.data
+                        #Playlist exctraction : search correspondancy Playlists between my Mopidy Playlists X Active_Box Data 
+                        playlist = o2mHandler.mopidyHandler.playlists.lookup(active_box.data)
+                        data = active_box.data.split("\n")
                         data = [x for x in data if not x.startswith('#')]
                         data = [x for x in data if not x.startswith('\r')]
+                        #Loop on lines containing the playlist uris
                         for content in data:
-                            #need to be updated : in which playlist is track if manies ?
+                            #Taking the first one. Pb if manies ?
                             if 'spotify:playlist' in content: 
                                 library_link = content
                                 break
+                    print(f"Library LInk : {library_link}")
 
             if event.event == "track_playback_ended":
                 #Quick and dirty volume Management
@@ -360,12 +364,12 @@ if __name__ == "__main__":
                     print(f"Event : {position} / stat : {stat.read_position}")
                 # If directly in box data (not m3u) : behaviour to ckeck
                 if (position / track.length > 0.7): 
-                    box = o2mHandler.dbHandler.get_box_by_data(track.uri)  # To check !!! Récupère le box correspondant à la chaine
-                    if box != None:
-                        if box.box_type == "podcasts:channel":
-                            box.option_last_unread = (track.track_no)  # actualise le numéro du dernier podcast écouté
-                            box.update()
-                            box.save()
+                    active_box = o2mHandler.dbHandler.get_box_by_data(track.uri)  # To check !!! Récupère le active_box correspondant à la chaine
+                    if active_box != None:
+                        if active_box.box_type == "podcasts:channel":
+                            active_box.option_last_unread = (track.track_no)  # actualise le numéro du dernier podcast écouté
+                            active_box.update()
+                            active_box.save()
             '''
                             
             print(f"\n{event.event} song : {track.name} with option_type {option_type} and library_link {library_link}")

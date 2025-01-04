@@ -104,7 +104,6 @@ class O2mToMopidy:
         return stats
 
 #TAG MANAGEMENT
-
     def box_action(self,box):
         if self.configO2M["discover"] == "true":
             try: 
@@ -219,8 +218,8 @@ class O2mToMopidy:
 
 #O2M CORE / TRACKLIST INIT 
     def one_box_changed(self, box, max_results=15):
-        #print(f"\nNouveau box détecté: {box}")
-        if (box.uid != self.last_box_uid):  # Si différent du précédent box détecté (Fonctionnel uniquement avec un lecteur)
+        #print(f"\nNew box added: {box}")
+        if (box.uid != self.last_box_uid):  # If different from last box added - for NFC mode only
             uri = "box:"+box.uid
             self.update_stat_raw(uri)
 
@@ -240,6 +239,7 @@ class O2mToMopidy:
             #Let's go to play
             if len(tracklist_uris)>0:
                 #max_results to be recalculated function of subadding already done (content var)
+                #TODO : library_link
                 length = self.add_tracks(box, tracklist_uris, max_results) # Envoie les uris en lecture
 
                 #Shuffle if several entries in this action
@@ -269,27 +269,29 @@ class O2mToMopidy:
             self.play_or_resume()
 
 #TRACKLIST FILL / ADD
-    # Adding tracks to tracklist and associate them to tracks table
-    def add_tracks(self, box1, uris, max_results=15, force_option_type=None):
+    # Adding tracks to tracklist and associate them to active_box infos
+    def add_tracks(self, active_box, uris, max_results=15, force_option_type=None, library_link=''):
         #Set variables
-        option_type = box1.option_type
+        option_type = active_box.option_type
         if force_option_type != None: 
             option_type=force_option_type
         length = 0
         
         if isinstance(uris, list):
             if len(uris) > 0:
+                #Inits
                 uris = util.flatten_list(uris)
                 #uris = self.flatten(uris)
-                if None in uris:
-                    uris.remove(None)
-                if "None" in uris:
-                    uris.remove("None")
+                if None in uris: uris.remove(None)
+                if "None" in uris: uris.remove("None")
+
                 prev_length = self.mopidyHandler.tracklist.get_length()
                 if self.mopidyHandler.tracklist.index():
                     current_index = self.mopidyHandler.tracklist.index()
                 else: 
                     current_index = 0 
+                
+                #Adding tracks trought mopidy handler
                 tltracks_added = self.mopidyHandler.tracklist.add(uris=uris)
                 length = len(tltracks_added)
                 print (f"Lenght added {len(tltracks_added)}")
@@ -332,7 +334,7 @@ class O2mToMopidy:
                     self.mopidyHandler.tracklist.remove({"uri": uris_rem})
 
                     #Adding common and library tracks
-                    '''discover_level = self.get_option_for_box(box1, "option_discover_level")
+                    '''discover_level = self.get_option_for_box(active_box, "option_discover_level")
                     limit = int(round(len(tltracks_added) * discover_level / 100))
                     window = int(round(discover_level / 2))
                     print(f"discover_level {discover_level} limit {limit} window {window}")
@@ -346,7 +348,7 @@ class O2mToMopidy:
                     #print(f"Length {new_length}")
 
                     # Shuffle new tracks if necessary : global shuffle or box option : now in card 
-                    if (self.shuffle == "true" and box1.option_sort != "desc" and box1.option_sort != "asc") or box1.option_sort == "shuffle":
+                    if (self.shuffle == "true" and active_box.option_sort != "desc" and active_box.option_sort != "asc") or active_box.option_sort == "shuffle":
                         self.shuffle_tracklist(prev_length, new_length)
 
                     # Slice added tracks to max_results
@@ -362,36 +364,36 @@ class O2mToMopidy:
                     #print(f"Adding {new_length - prev_length} tracks")
 
                     # TLIDs : Mopidy Tracks's IDs in tracklist associated to added Box
-                    if hasattr(box1, "tlids"):
-                        box1.tlids += [x.tlid for x in slice2]
+                    if hasattr(active_box, "tlids"):
+                        active_box.tlids += [x.tlid for x in slice2]
                     else:
-                        box1.tlids = [x.tlid for x in slice2]
+                        active_box.tlids = [x.tlid for x in slice2]
                     #print("box.tlids",box.tlids)
 
                     # Uris : Mopidy Uri's associated to added Box
-                    if hasattr(box1, "uris"):
-                        box1.uris += [x.track.uri for x in slice2]
+                    if hasattr(active_box, "uris"):
+                        active_box.uris += [x.track.uri for x in slice2]
                     else:
-                        box1.uris = [x.track.uri for x in slice2]
+                        active_box.uris = [x.track.uri for x in slice2]
                     #print("box.uris",box.uris)
 
                     # Option types
-                    if hasattr(box1, "option_types"):
-                        box1.option_types += [option_type for x in slice2]
+                    if hasattr(active_box, "option_types"):
+                        active_box.option_types += [option_type for x in slice2]
                     else:
-                        box1.option_types = [option_type for x in slice2]
+                        active_box.option_types = [option_type for x in slice2]
                     #print("Option_types",box.option_types)
 
                     #library_link
-                    if hasattr(box1, "library_link"):
-                        box1.library_link += ['' for x in slice2]
+                    if hasattr(active_box, "library_link"):
+                        active_box.library_link += [library_link for x in slice2]
                     else:
-                        box1.library_link = ['' for x in slice2]
+                        active_box.library_link = [library_link for x in slice2]
                     #print("library_link",box.library_link)
 
                     # Shuffle complete computed tracklist if more than two boxs
                     #self.shuffle_tracklist(current_index + 1, new_length)
-                    if (len(self.activeboxs) > 1 or box1.option_sort=="shuffle") and not((option_type == "info") and (new_length - prev_length==1)):
+                    if (len(self.activeboxs) > 1 or active_box.option_sort=="shuffle") and not((option_type == "info") and (new_length - prev_length==1)):
                         self.shuffle_tracklist(current_index + 1, new_length)
                     #Move at next place the lastinfo content
                     if ((option_type == "info") and (new_length - prev_length==1)):
@@ -420,7 +422,7 @@ class O2mToMopidy:
             print(f"\nAUTO : News {max_result1} tracks\n")
             box1 = self.dbHandler.get_box_by_option_type('new')
             #self.one_box_changed(box, max_result1)
-            self.add_tracks(box, self.tracklistappend_box(box1,max_result1), max_result1, "new")
+            self.add_tracks(box, uris=self.tracklistappend_box(box1,max_result1), max_result1, "new")
             #tracklist_uris.append(self.tracklistappend_box(box,max_result1))        
             
             #Incoming n=(0.5*d)/30
@@ -428,7 +430,7 @@ class O2mToMopidy:
             print(f"\nAUTO : Incoming {max_result1} tracks\n")
             box1 = self.dbHandler.get_box_by_option_type('incoming')
             #self.one_box_changed(box, max_result1)
-            self.add_tracks(box, self.tracklistappend_box(box1,max_result1), max_result1, "incoming")
+            self.add_tracks(box, uris=self.tracklistappend_box(box1,max_result1), max_result1, "incoming")
             #tracklist_uris.append(self.tracklistappend_box(box,max_result1))  
 
             #Favorites n=5/30
@@ -442,7 +444,7 @@ class O2mToMopidy:
                 #box=box1
                 fav= self.tracklistappend_box(box1,max_result1)
             if fav != None:
-                self.add_tracks(box, fav, max_result1, "favorites")
+                self.add_tracks(active_box, uris=fav, max_result1, "favorites")
             #tracklist_uris.append(self.tracklistappend_box(box,max_result1))
 
             if mode=='podcast':
@@ -483,13 +485,13 @@ class O2mToMopidy:
         except Exception as val_e: 
             print(f"Erreur : {val_e}")
 
-    def tracklistfill_auto(self,box,max_results=20,discover_level=5,mode='normal'):
-        #box is the common and box1,2.. the specific emulation for each activation
+    def tracklistfill_auto(self,active_box,max_results=20,discover_level=5,mode='normal'):
+        #box is the active box in memory and box1,2.. the database contents of boxes
         try:
             print (f"DL AUTO : {discover_level}")
             
             #GO QUICKLY
-            self.quicklaunch_auto(1,discover_level,box)
+            self.quicklaunch_auto(1,discover_level,active_box)
 
             #Variables
             window = int(round(discover_level / 2))
@@ -500,52 +502,57 @@ class O2mToMopidy:
             max_result1 = int(round((0.7*discover_level)/30*max_results))
             print(f"\nAUTO : News {max_result1} tracks\n")
             box1 = self.dbHandler.get_box_by_option_type('new')
-            self.add_tracks(box, self.tracklistappend_box(box1,max_result1), max_result1, "new")
+            self.add_tracks(active_box, uris=self.tracklistappend_box(box1,max_result1), max_result1, "new")
             
             #Incoming n=(0.5*d)/30
             max_result1 = int(round((0.2*discover_level)/30*max_results))
             print(f"\nAUTO : Incoming {max_result1} tracks\n")
             box1 = self.dbHandler.get_box_by_option_type('incoming')
-            self.add_tracks(box, self.tracklistappend_box(box1,max_result1), max_result1, "incoming")
+            library_link = self.get_spotify_playlist_from_box(box1)
+            self.add_tracks(active_box, uris=self.tracklistappend_box(box1,max_result1), max_result1, "incoming",library_link)
 
             #Favorites n=5/30
             max_result1 = int(round((-0.3*discover_level+8)/30*max_results))
             print(f"\nAUTO : Fav {max_result1} tracks\n")
             box1 = self.dbHandler.get_box_by_option_type('favorites')
-            #Spotify
+            #Using spotify favs
             if self.username !=None:
                 fav = self.spotifyHandler.get_library_favorite_tracks(max_result1)
+                library_link = 'spotify:favorites'
+            #Using specific playlist
             elif box1 != None:
                 #box=box1
                 fav= self.tracklistappend_box(box1,max_result1)
-            if fav != None:self.add_tracks(box, fav, max_result1, "favorites")
+                library_link = self.get_spotify_playlist_from_box(box1)
+            if fav != None: self.add_tracks(active_box, uris=fav, max_result1, "favorites",library_link)
 
             if mode=='podcast':
                 #Podcasts ??? n=(0.5*d)/30
                 max_result1 = int(round((0.9*discover_level)/30*max_results))
                 print(f"\nAUTO : Podcasts {max_result1} tracks\n")
                 box1 = self.dbHandler.get_box_by_option_type('podcast')
-                if box1:self.add_tracks(box, self.tracklistappend_box(box1,max_result1), max_result1, "podcast")
+                if box1:self.add_tracks(active_box, uris=self.tracklistappend_box(box1,max_result1), max_result1, "podcast")
 
             #APPEND
             #Common tracks n=(-0.3*d+8)/30
             max_result1 = int(round((-0.3*discover_level+8)/30*max_results))
             print(f"\nAUTO : Common {max_result1} tracks\n")
-            self.add_tracks(box, self.get_common_tracks(datetime.datetime.now().hour,window,max_result1), max_result1, "normal")
+            self.add_tracks(active_box, uris=self.get_common_tracks(datetime.datetime.now().hour,window,max_result1), max_result1, "normal","o2m:history")
             
             #Albums n=5/30
             max_result1 = int(round(discover_level*2/30*max_results))
             if (random.choice([1,2])) == 1:
                 print(f"\nAUTO : Albums {max_result1} tracks\n")
-                self.add_tracks(box, self.spotifyHandler.get_my_albums_tracks(max_result1,discover_level), max_result1, "normal")
+                self.add_tracks(active_box, uris=self.spotifyHandler.get_my_albums_tracks(max_result1,discover_level), max_result1, "normal","spotify:album")
             else:
                 print(f"\nAUTO : Artists {max_result1} tracks\n")
-                self.add_tracks(box, self.spotifyHandler.get_my_artists_tracks(max_result1,discover_level), max_result1, "normal")
+                self.add_tracks(active_box, uris=self.spotifyHandler.get_my_artists_tracks(max_result1,discover_level), max_result1, "normal","spotify:artist")
             
             #Playlists n=(-0.2*d+7)/30
             max_result1 = int(round((-0.1*discover_level+7)/30*max_results))
             print(f"\nAUTO : Playlist {max_result1} tracks\n")
-            self.add_tracks(box, self.spotifyHandler.get_playlists_tracks(max_result1,discover_level), max_result1, "normal")
+            #TODO : library_link
+            self.add_tracks(active_box, uris=self.spotifyHandler.get_playlists_tracks(max_result1,discover_level), max_result1, "normal")
             
             #return tracklist_uris
         except Exception as val_e: 
@@ -889,7 +896,6 @@ class O2mToMopidy:
                 self.mopidyHandler.tracklist.remove({"tlid": [tlid]})
 
 #   SONGS RECOMMANDATION MANAGEMENT
-
     def add_reco_after_track_read(self, track_uri, library_link='', data=''):
         if self.option_add_reco_after_track: 
             #self.mopidyHandler.playback.pause()
@@ -1006,6 +1012,23 @@ class O2mToMopidy:
             #self.play_or_resume()
 
 #  TRACKS AND STATS MANAGEMENT
+
+    def get_spotify_playlist_from_box(self,box):
+        library_link = ''
+
+        #Playlist exctraction : search correspondancy Playlists between my Mopidy Playlists X Active_Box Data 
+        playlist = self.mopidyHandler.playlists.lookup(box.data)
+        data = box.data.split("\n")
+        data = [x for x in data if not x.startswith('#')]
+        data = [x for x in data if not x.startswith('\r')]
+        #Loop on lines containing the playlist uris
+        for content in data:
+            #Taking the first one. Pb if manies ?
+            if 'spotify:playlist' in content: 
+                library_link = content
+                break
+        return library_link
+
     def get_spotify_reco(self, track_seed, limit):
         uris = self.spotifyHandler.get_recommendations(
             seed_genres=None, seed_artists=None, seed_tracks=track_seed, limit=limit)
@@ -1035,7 +1058,7 @@ class O2mToMopidy:
 
     def get_active_box_by_uri(self, uri):
         for box in self.activeboxs:
-            #print (box
+            #print (box)
             if hasattr(box, "uris"):
                 if uri in box.uris:
                     return box
@@ -1137,15 +1160,18 @@ class O2mToMopidy:
         gap = stat.read_count_end / stat.read_count / stat.read_end #Gap evaluates integrity of data to check if fix is needed
 
         #If meta fix activated do not include actual rate
-        if (fix == False):
-            if (gap > 1.5 ) or (gap < 0.6): 
-                stat.read_end = ((stat.read_end * (stat.read_count - stat.read_count_end))+ stat.read_count_end + rate) / (stat.read_count + 1)
+        if stat.read_count <=1:
+            stat.read_end = rate
+        else:            
+            if (fix == False):
+                if (gap > 1.5 ) or (gap < 0.6): 
+                    stat.read_end = ((stat.read_end * (stat.read_count - stat.read_count_end))+ stat.read_count_end + rate) / (stat.read_count + 1)
+                else:
+                    stat.read_end = ((stat.read_end * stat.read_count) + rate) / (stat.read_count + 1)
             else:
-                stat.read_end = ((stat.read_end * stat.read_count) + rate) / (stat.read_count + 1)
-        else:
-            if (gap > 1.5 ) or (gap < 0.6): 
-                stat.read_end = ((stat.read_end * (stat.read_count - stat.read_count_end))+ stat.read_count_end) / (stat.read_count)
-        #stat.read_end = ((stat.read_end * stat.read_count_end) + rate) / (stat.read_count_end + 1)
+                if (gap > 1.5 ) or (gap < 0.6): 
+                    stat.read_end = ((stat.read_end * (stat.read_count - stat.read_count_end))+ stat.read_count_end) / (stat.read_count)
+            #stat.read_end = ((stat.read_end * stat.read_count_end) + rate) / (stat.read_count_end + 1)
 
         #Update stats
         if track_finished:
@@ -1169,7 +1195,7 @@ class O2mToMopidy:
 
             if track_finished == True :
                 print("Finished : autofill activated")
-                #Adding to incoming if "new track" played many times
+                #NEW > INCOMING : Adding to incoming if "new track" played many times
                 if stat.option_type == 'new' and self.threshold_playing_count_new(stat.read_count_end,self.discover_level)==True :
                     if library_link !='':
                         print(f"Autofilling Library : {library_link}")
@@ -1211,7 +1237,7 @@ class O2mToMopidy:
                                         if result: stat.option_type = 'normal'
                         '''
 
-                #Adding any track to favorites if played many times
+                #NORMAL > FAVORITES : Adding any track to favorites if played many times
                 if self.threshold_adding_favorites(stat.read_count_end,self.discover_level)==True :
                     box_favorites = self.dbHandler.get_box_by_option_type('favorites')
                     print(f"Autofilling Favorites : {box_favorites}")
@@ -1290,7 +1316,7 @@ class O2mToMopidy:
             return (result)
         else: print(f"Erreur : autofill, playlist_uri : {playlist_uri}")
             
-#   THRESHOLDs MANAGEMENT
+#   THRESHOLDS MANAGEMENT
 
     #Threshold for stopping playing and autofilling new tracks (add_tracks or autofill)
     #discover_level = 5 : read_count_end>=3
