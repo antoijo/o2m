@@ -324,7 +324,7 @@ if __name__ == "__main__":
                             if 'spotify:playlist' in content: 
                                 library_link = content
                                 break
-                    print(f"Library LInk : {library_link}")
+                    print(f"Library Link : {library_link}")
 
             if event.event == "track_playback_ended":
                 #Quick and dirty volume Management
@@ -338,6 +338,8 @@ if __name__ == "__main__":
                     print (f"Ending with option_type {option_type}")
                     if option_type != 'new': 
                         #int(round(discover_level * 0.25))
+                        #Pb with this library_link calc
+                        library_link="o2m:reco_after_track"
                         try: o2mHandler.add_reco_after_track_read(track.uri,library_link,data)
                         except Exception as val_e:
                             print(f"Erreur : {val_e}")

@@ -263,8 +263,8 @@ class O2mToMopidy:
         if box == None:
             box = self.dbHandler.get_box_by_option_type('new_mopidy')
         #Common tracks :launch quickly auto with one track
-        go = self.add_tracks(box, self.get_common_tracks(datetime.datetime.now().hour,window,max_results), max_results, "normal")
-        go += self.add_tracks(box, self.lastinfos(box,max_results), 1, "info")
+        go = self.add_tracks(box, self.get_common_tracks(datetime.datetime.now().hour,window,max_results), max_results, "normal","o2m:history")
+        go += self.add_tracks(box, self.lastinfos(box,max_results), 1, "info","o2m:info")
         if go > 0:
             self.play_or_resume()
 
@@ -390,7 +390,7 @@ class O2mToMopidy:
                     else:
                         active_box.library_link = [library_link for x in slice2]
                     #print("library_link",box.library_link)
-
+                    
                     # Shuffle complete computed tracklist if more than two boxs
                     #self.shuffle_tracklist(current_index + 1, new_length)
                     if (len(self.activeboxs) > 1 or active_box.option_sort=="shuffle") and not((option_type == "info") and (new_length - prev_length==1)):
@@ -402,88 +402,6 @@ class O2mToMopidy:
                 #print(f"\nTracks added to Box {box} with option_types {box.option_types} and library_link {box.library_link} \n")
         return (length)
 
-    def tracklistfill_auto0(self,box,max_results=20,discover_level=5,mode='full'):
-        #box is the common and box1,2.. the specific emulation for each activation
-        try:
-            print (f"DL AUTO : {discover_level}")
-            
-            #GO QUICKLY
-            self.quicklaunch_auto(1,discover_level,box)
-
-            #Variables
-            window = int(round(discover_level / 2))
-            #box = self.dbHandler.get_box_by_option_type('new_mopidy')
-            #box.option_type = 'normal'
-            tracklist_uris= []
-
-            #ADD_TRACKS
-            #News n=(0.5*d)/30
-            max_result1 = int(round((0.7*discover_level)/30*max_results))
-            print(f"\nAUTO : News {max_result1} tracks\n")
-            box1 = self.dbHandler.get_box_by_option_type('new')
-            #self.one_box_changed(box, max_result1)
-            self.add_tracks(box, uris=self.tracklistappend_box(box1,max_result1), max_result1, "new")
-            #tracklist_uris.append(self.tracklistappend_box(box,max_result1))        
-            
-            #Incoming n=(0.5*d)/30
-            max_result1 = int(round((0.2*discover_level)/30*max_results))
-            print(f"\nAUTO : Incoming {max_result1} tracks\n")
-            box1 = self.dbHandler.get_box_by_option_type('incoming')
-            #self.one_box_changed(box, max_result1)
-            self.add_tracks(box, uris=self.tracklistappend_box(box1,max_result1), max_result1, "incoming")
-            #tracklist_uris.append(self.tracklistappend_box(box,max_result1))  
-
-            #Favorites n=5/30
-            max_result1 = int(round((-0.3*discover_level+8)/30*max_results))
-            print(f"\nAUTO : Fav {max_result1} tracks\n")
-            box1 = self.dbHandler.get_box_by_option_type('favorites')
-            #Spotify
-            if self.username !=None:
-                fav = self.spotifyHandler.get_library_favorite_tracks(max_result1)
-            elif box1 != None:
-                #box=box1
-                fav= self.tracklistappend_box(box1,max_result1)
-            if fav != None:
-                self.add_tracks(active_box, uris=fav, max_result1, "favorites")
-            #tracklist_uris.append(self.tracklistappend_box(box,max_result1))
-
-            if mode=='podcast':
-                #Podcasts ??? n=(0.5*d)/30
-                max_result1 = int(round((0.9*discover_level)/30*max_results))
-                print(f"\nAUTO : Podcasts {max_result1} tracks\n")
-                box1 = self.dbHandler.get_box_by_option_type('podcast')
-                #self.one_box_changed(box, max_result1)
-                if box1:
-                    self.add_tracks(box, self.tracklistappend_box(box1,max_result1), max_result1, "podcast")
-                tracklist_uris.append(self.tracklistappend_box(box,max_result1))
-
-            #APPEND
-            #Common tracks n=(-0.3*d+8)/30
-            max_result1 = int(round((-0.3*discover_level+8)/30*max_results))
-            print(f"\nAUTO : Common {max_result1} tracks\n")
-            #tracklist_uris.append(self.get_common_tracks(datetime.datetime.now().hour,window,max_result1))
-            self.add_tracks(box, self.get_common_tracks(datetime.datetime.now().hour,window,max_result1), max_result1, "normal")
-            #self.add_tracks(box, tracklist_uris, max_results)
-
-            #Albums n=5/30
-            max_result1 = int(round(discover_level*2/30*max_results))
-            #tracklist_uris.append(self.spotifyHandler.get_my_albums_tracks(max_result1,discover_level))
-            if (random.choice([1,2])) == 1:
-                print(f"\nAUTO : Albums {max_result1} tracks\n")
-                self.add_tracks(box, self.spotifyHandler.get_my_albums_tracks(max_result1,discover_level), max_result1, "normal")
-            else:
-                print(f"\nAUTO : Artists {max_result1} tracks\n")
-                self.add_tracks(box, self.spotifyHandler.get_my_artists_tracks(max_result1,discover_level), max_result1, "normal")
-
-            #Playlists n=(-0.2*d+7)/30
-            max_result1 = int(round((-0.2*discover_level+7)/30*max_results))
-            print(f"\nAUTO : Playlist {max_result1} tracks\n")
-            #tracklist_uris.append(self.spotifyHandler.get_playlists_tracks(max_result1,discover_level))
-            self.add_tracks(box, self.spotifyHandler.get_playlists_tracks(max_result1,discover_level), max_result1, "normal")
-            
-            #return tracklist_uris
-        except Exception as val_e: 
-            print(f"Erreur : {val_e}")
 
     def tracklistfill_auto(self,active_box,max_results=20,discover_level=5,mode='normal'):
         #box is the active box in memory and box1,2.. the database contents of boxes
@@ -502,14 +420,14 @@ class O2mToMopidy:
             max_result1 = int(round((0.7*discover_level)/30*max_results))
             print(f"\nAUTO : News {max_result1} tracks\n")
             box1 = self.dbHandler.get_box_by_option_type('new')
-            self.add_tracks(active_box, uris=self.tracklistappend_box(box1,max_result1), max_result1, "new")
+            self.add_tracks(active_box, self.tracklistappend_box(box1,max_result1), max_result1, "new","o2m:new")
             
             #Incoming n=(0.5*d)/30
             max_result1 = int(round((0.2*discover_level)/30*max_results))
             print(f"\nAUTO : Incoming {max_result1} tracks\n")
             box1 = self.dbHandler.get_box_by_option_type('incoming')
             library_link = self.get_spotify_playlist_from_box(box1)
-            self.add_tracks(active_box, uris=self.tracklistappend_box(box1,max_result1), max_result1, "incoming",library_link)
+            self.add_tracks(active_box, self.tracklistappend_box(box1,max_result1), max_result1, "incoming",library_link)
 
             #Favorites n=5/30
             max_result1 = int(round((-0.3*discover_level+8)/30*max_results))
@@ -524,35 +442,37 @@ class O2mToMopidy:
                 #box=box1
                 fav= self.tracklistappend_box(box1,max_result1)
                 library_link = self.get_spotify_playlist_from_box(box1)
-            if fav != None: self.add_tracks(active_box, uris=fav, max_result1, "favorites",library_link)
+            if fav != None: self.add_tracks(active_box, fav, max_result1, "favorites",library_link)
 
             if mode=='podcast':
                 #Podcasts ??? n=(0.5*d)/30
                 max_result1 = int(round((0.9*discover_level)/30*max_results))
                 print(f"\nAUTO : Podcasts {max_result1} tracks\n")
                 box1 = self.dbHandler.get_box_by_option_type('podcast')
-                if box1:self.add_tracks(active_box, uris=self.tracklistappend_box(box1,max_result1), max_result1, "podcast")
+                if box1:self.add_tracks(active_box, self.tracklistappend_box(box1,max_result1), max_result1, "podcast","o2m:podcast")
 
             #APPEND
             #Common tracks n=(-0.3*d+8)/30
             max_result1 = int(round((-0.3*discover_level+8)/30*max_results))
             print(f"\nAUTO : Common {max_result1} tracks\n")
-            self.add_tracks(active_box, uris=self.get_common_tracks(datetime.datetime.now().hour,window,max_result1), max_result1, "normal","o2m:history")
+            self.add_tracks(active_box, self.get_common_tracks(datetime.datetime.now().hour,window,max_result1), max_result1, "normal","o2m:history")
             
             #Albums n=5/30
             max_result1 = int(round(discover_level*2/30*max_results))
             if (random.choice([1,2])) == 1:
                 print(f"\nAUTO : Albums {max_result1} tracks\n")
-                self.add_tracks(active_box, uris=self.spotifyHandler.get_my_albums_tracks(max_result1,discover_level), max_result1, "normal","spotify:album")
+                self.add_tracks(active_box, self.spotifyHandler.get_my_albums_tracks(max_result1,discover_level), max_result1, "normal","spotify:album")
             else:
                 print(f"\nAUTO : Artists {max_result1} tracks\n")
-                self.add_tracks(active_box, uris=self.spotifyHandler.get_my_artists_tracks(max_result1,discover_level), max_result1, "normal","spotify:artist")
+                self.add_tracks(active_box, self.spotifyHandler.get_my_artists_tracks(max_result1,discover_level), max_result1, "normal","spotify:artist")
             
             #Playlists n=(-0.2*d+7)/30
             max_result1 = int(round((-0.1*discover_level+7)/30*max_results))
             print(f"\nAUTO : Playlist {max_result1} tracks\n")
-            #TODO : library_link
-            self.add_tracks(active_box, uris=self.spotifyHandler.get_playlists_tracks(max_result1,discover_level), max_result1, "normal")
+            #Iterate on tracks to add_track with uri and library_link
+            pl_tracks = self.spotifyHandler.get_playlists_tracks(max_result1,discover_level)
+            for key, pl_track in pl_tracks.items():
+                self.add_tracks(active_box, uris=pl_track[0], max_results=1, force_option_type="normal", library_link=pl_track[1])
             
             #return tracklist_uris
         except Exception as val_e: 
@@ -717,8 +637,10 @@ class O2mToMopidy:
                     tracks_uris = self.spotifyHandler.get_artist_top_tracks(media_parts[2])  # 10 tops tracks of artist
                     #self.add_tracks(box, tracks_uris, max_results)
                     tracklist_uris.append(self.spotifyHandler.get_artist_all_tracks(media_parts[2], limit=max_results - 10))  # all tracks of artist with no specific order
+                elif media_parts[1] == "playlist":
+                    tracklist_uris.append(content)
                 else:
-                    tracklist_uris.append(content)        
+                    tracklist_uris.append(content)
 
             # Other contents in the playlist
             else : 
@@ -899,7 +821,6 @@ class O2mToMopidy:
     def add_reco_after_track_read(self, track_uri, library_link='', data=''):
         if self.option_add_reco_after_track: 
             #self.mopidyHandler.playback.pause()
-
             if "spotify:track" in track_uri:
                 # Calculate the discover_level : box associated or updated discover_level via api
                 if self.discover_level_on:
@@ -1193,8 +1114,9 @@ class O2mToMopidy:
             uri = []
             uri.append(track.uri)
 
+            #TRACK FINISHED
             if track_finished == True :
-                print("Finished : autofill activated")
+                print("Finished : autofill and remove activated")
                 #NEW > INCOMING : Adding to incoming if "new track" played many times
                 if stat.option_type == 'new' and self.threshold_playing_count_new(stat.read_count_end,self.discover_level)==True :
                     if library_link !='':
@@ -1238,43 +1160,45 @@ class O2mToMopidy:
                         '''
 
                 #NORMAL > FAVORITES : Adding any track to favorites if played many times
-                if self.threshold_adding_favorites(stat.read_count_end,self.discover_level)==True :
-                    box_favorites = self.dbHandler.get_box_by_option_type('favorites')
-                    print(f"Autofilling Favorites : {box_favorites}")
-                    if box_favorites:
-                        if 'spotify:playlist' in box_favorites.data: 
-                            result = self.autofill_spotify_playlist(box_favorites.data,uri)
-                            if result: stat.option_type = 'favorites'
-                        if 'm3u' in box_favorites.data :
-                            playlist = self.mopidyHandler.playlists.lookup(box_favorites.data)
-                            #for track in playlist.tracks:
-                            #    if 'spotify:playlist' in track.uri :
-                            #        result = self.autofill_spotify_playlist(track.uri,uri)
-                            #        if result: stat.option_type = 'favorites'
-                            if 'spotify:playlist' in playlist.tracks[0].uri :
-                                result = self.autofill_spotify_playlist(playlist.tracks[0].uri,uri)
-                                if result: stat.option_type = 'favorites'
+                if self.threshold_adding_favorites(stat,self.discover_level)==True :
+                    print(f"Autofilling Favorites")
+                    if self.username !=None:
+                        result = self.spotifyHandler.current_user_saved_tracks_add(tracks=uri)
+                        if result: stat.option_type = 'favorites'
                     else:
-                        self.spotifyHandler.current_user_saved_tracks_add(tracks=uri)
+                        box_favorites = self.dbHandler.get_box_by_option_type('favorites')
+                        if box_favorites:
+                            if 'spotify:playlist' in box_favorites.data: 
+                                result = self.autofill_spotify_playlist(box_favorites.data,uri)
+                                if result: stat.option_type = 'favorites'
+                            if 'm3u' in box_favorites.data :
+                                playlist = self.mopidyHandler.playlists.lookup(box_favorites.data)
+                                #for track in playlist.tracks:
+                                #    if 'spotify:playlist' in track.uri :
+                                #        result = self.autofill_spotify_playlist(track.uri,uri)
+                                #        if result: stat.option_type = 'favorites'
+                                if 'spotify:playlist' in playlist.tracks[0].uri :
+                                    result = self.autofill_spotify_playlist(playlist.tracks[0].uri,uri)
+                                    if result: stat.option_type = 'favorites'
 
-
-
+            #TRACK SKIPPED
             else:
                 #Remove track from playlist if skipped many times
-                if self.threshold_count_deletion(stat,self.discover_level)==True :
-                    '''and library_link !='''
-                    print (f"Trashing track {stat.skipped_count} {self.discover_level}")
+                if self.threshold_remove_track_playlist(stat,self.discover_level)==True and library_link !='':
+                    print (f"Trying to Trash track {stat.uri} from {library_link}")
+                    #Adding to trash
                     box_trash = self.dbHandler.get_box_by_option_type('trash')
                     if box_trash:
                         if 'spotify:playlist' in box_trash.data: 
                             result = self.autofill_spotify_playlist(box_trash.data,uri)
 
-                            if result and stat.option_type == "incoming": 
-                                try:
-                                    self.spotifyHandler.remove_tracks_playlist(library_link, uri)
-                                except Exception as val_e: 
-                                    print(f"Erreur : {val_e}")
-                            #stat.option_type = 'trash'
+                            #If trashed, let's trash it really
+                            if result: 
+                                #self.spotifyHandler.remove_tracks_playlist(library_link, uri)
+                                result = self.remove_spotify_playlist(library_link,uri)
+                                if result: stat.option_type = 'new'
+                                if result:  print (f"Track trashed {stat.uri} from {library_link}")
+                                #stat.option_type = 'trash'
 
                         '''
                         if 'm3u' in box_trash.data :
@@ -1288,60 +1212,91 @@ class O2mToMopidy:
                                         stat.option_type = 'trash'
                         '''
 
+                #Remove track from favorites if skipped many times
+                if self.threshold_removing_favorites(stat,self.discover_level)==True:
+                    print(f"Removing Favorites")
+                    if self.username !=None:
+                        result = self.spotifyHandler.current_user_saved_tracks_delete(tracks=uri)
+                        if result: stat.option_type = 'normal'
+                    else:
+                        box_favorites = self.dbHandler.get_box_by_option_type('favorites')
+                        if box_favorites:
+                            if 'spotify:playlist' in box_favorites.data: 
+                                result = self.remove_spotify_playlist(box_favorites.data,uri)
+                                if result: stat.option_type = 'normal'
+                            if 'm3u' in box_favorites.data :
+                                playlist = self.mopidyHandler.playlists.lookup(box_favorites.data)
+                                #for track in playlist.tracks:
+                                #    if 'spotify:playlist' in track.uri :
+                                #        result = self.autofill_spotify_playlist(track.uri,uri)
+                                #        if result: stat.option_type = 'favorites'
+                                if 'spotify:playlist' in playlist.tracks[0].uri :
+                                    result = self.remove_spotify_playlist(playlist.tracks[0].uri,uri)
+                                    if result: stat.option_type = 'normal'
+
         print(f"\n\nUpdate and Fix {fix} stat track {stat}\n\n")
         stat.update()
         stat.save()
 
     # Auto Filling playlist 
-    def autofill_spotify_playlist(self, playlist_uri,uri):
-        try: 
-            result = self.autofill_spotify_playlist_action(playlist_uri,uri)
+    def remove_spotify_playlist(self, playlist_uri,uri):
+        playlist_id = playlist_uri.split(":")[2]
+        track_id = uri[0].split(":")[2]
+        try:
+            result = self.spotifyHandler.playlist_remove_all_occurrences_of_items(playlist_id, track_id)
             return (result)
         except Exception as val_e: 
-            print(f"Erreur : {val_e}")
-            self.spotifyHandler.init_token_sp() #pb of expired token to resolve...
-            result = self.autofill_spotify_playlist_action(playlist_uri,uri)
-            return (result)
+            print(f"Erreur : {val_e}")        
 
-    def autofill_spotify_playlist_action(self, playlist_uri,uri):
-        #Toadd : test if writable
-        print(f"Autofill, playlist_uri : {playlist_uri} uri : {uri}")
-        if 'spotify:playlist' in playlist_uri and ('spotify:track' in uri[0]) :
-            playlist_id = playlist_uri.split(":")[2]
-            track_id = uri[0].split(":")[2]
-            if self.spotifyHandler.is_track_in_playlist(self.username,track_id,playlist_id) == False:
-                print (f"Auto Filling playlist with self.username: {self.username}, playlist: {playlist_uri}, track.uri: {uri}")
-                result = self.spotifyHandler.add_tracks_playlist(self.username, playlist_uri, uri)
-            else: result = 'already in'
-            return (result)
-        else: print(f"Erreur : autofill, playlist_uri : {playlist_uri}")
+    # Auto Filling playlist 
+    def autofill_spotify_playlist(self, playlist_uri,uri):
+        try: 
+            #Toadd : test if writable
+            print(f"Autofill, playlist_uri : {playlist_uri} uri : {uri}")
+            if 'spotify:playlist' in playlist_uri and ('spotify:track' in uri[0]) :
+                playlist_id = playlist_uri.split(":")[2]
+                track_id = uri[0].split(":")[2]
+                if self.spotifyHandler.is_track_in_playlist(self.username,track_id,playlist_id) == False:
+                    print (f"Auto Filling playlist with self.username: {self.username}, playlist: {playlist_uri}, track.uri: {uri}")
+                    result = self.spotifyHandler.add_tracks_playlist(self.username, playlist_uri, uri)
+                else: result = 'already in'
+                return (result)
+        except Exception as val_e: 
+            print(f"Erreur : {val_e}")
             
 #   THRESHOLDS MANAGEMENT
 
-    #Threshold for stopping playing and autofilling new tracks (add_tracks or autofill)
+    #Threshold NEW : stopping playing and autofilling new tracks (add_tracks or autofill)
     #discover_level = 5 : read_count_end>=3
     def threshold_playing_count_new(self,read_count_end,discover_level):
         #print (f"read_count_end : {read_count_end} discover_level : {discover_level}")
         if float(read_count_end) >= ((11-discover_level)/2): return True
         else: return False
 
-    #Threshold for adding tracks to favorites (autofill)
-    #Need to integrate global ratio, not pertinent now
-    #discover_level = 5 : read_count_end>=12
-    def threshold_adding_favorites(self,read_count_end,discover_level):
-        '''if float(read_count_end) >= ((11-discover_level)*2): return True
-        else: return False'''
-        return False
+    #Threshold FAVORITES : for adding or removing tracks to favorites (autofill)
+    #discover_level = 5 : read_count_end>=12 // if float(read_count_end) >= ((11-discover_level)*2):
+    def threshold_adding_favorites(self,stat,discover_level):
+        result = False
+        if stat.option_type=="normal" and (stat.read_end > self.avg_stats['favorites']['read_end']) and (stat.read_count >= self.avg_stats['favorites']['read_count']): 
+            result=True
+        return result
+    def threshold_removing_favorites(self,stat,discover_level):
+        result = False
+        if stat.option_type=="favorites" and (stat.read_end < self.avg_stats['favorites']['read_end']) and (stat.read_count >= self.avg_stats['favorites']['read_count']): 
+            result=True
+        return result
 
-
-    #Threshold for deleting tracks from playlist if too many skip
+    #Threshold TRACK PLAYLIST : removing a track from a playlist if too many skip
     #discover_level = 5 et read_count_end=0 : skipped_count_end >=5 // and (stat.read_count_end == 0)
-    def threshold_count_deletion(self,stat,discover_level):
-        #if (float(stat.skipped_count) > ((11-discover_level)*(stat.read_count_end+1)*0.7)) : 
-        if (float(stat.skipped_count) > ((5)*(stat.read_count_end + 1)*0.7)) : 
-            return True 
-        else: 
-            return False
+    #if (float(stat.skipped_count) > ((11-discover_level)*(stat.read_count_end+1)*0.7)) : 
+    #if (float(stat.skipped_count) > ((5)*(stat.read_count_end + 1)*0.7)) : 
+    def threshold_remove_track_playlist(self,stat,discover_level):
+        result = False
+        if stat.option_type=="normal":
+            if (stat.read_end < self.avg_stats['normal']['read_end']) and (stat.read_count >= self.avg_stats['normal']['read_count']): result=True
+        elif stat.option_type=="incoming":
+            if (stat.read_end < self.avg_stats['incoming']['read_end']) and (stat.read_count >= self.avg_stats['incoming']['read_count']): result=True
+        return result
 
 #   MISC FUNCTIONS
     # Appelle ou rappelle la fonction de recommandation pour allonger la tracklist et poursuivre la lecture de manière transparente
