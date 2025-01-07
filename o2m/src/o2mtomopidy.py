@@ -1129,8 +1129,8 @@ class O2mToMopidy:
                         print(f"Autofilling Incoming : {box_incoming}")
                         if box_incoming:
                             if 'spotify:playlist' in box_incoming.data: 
-                                result = self.autofill_spotify_playlist(box_incoming.data,uri)
-                                if result: stat.option_type = 'incoming'
+                                result3 = self.autofill_spotify_playlist(box_incoming.data,uri)
+                                if result3: stat.option_type = 'incoming'
                             if 'm3u' in box_incoming.data :
                                 playlist = self.mopidyHandler.playlists.lookup(box_incoming.data)
                                 #for track in playlist.tracks:
@@ -1138,8 +1138,8 @@ class O2mToMopidy:
                                 #        result = self.autofill_spotify_playlist(track.uri,uri)
                                 #        if result: stat.option_type = 'favorites'
                                 if 'spotify:playlist' in playlist.tracks[0].uri :
-                                    result = self.autofill_spotify_playlist(playlist.tracks[0].uri,uri)
-                                    if result: stat.option_type = 'incoming'
+                                    result4 = self.autofill_spotify_playlist(playlist.tracks[0].uri,uri)
+                                    if result4: stat.option_type = 'incoming'
 
                         '''for box in self.activeboxs:
                             #Need to loop on the playlists IN the box/card
@@ -1163,14 +1163,14 @@ class O2mToMopidy:
                 if self.threshold_adding_favorites(stat,self.discover_level)==True :
                     print(f"Autofilling Favorites")
                     if self.username !=None:
-                        result = self.spotifyHandler.current_user_saved_tracks_add(tracks=uri)
-                        if result: stat.option_type = 'favorites'
+                        result5 = self.spotifyHandler.current_user_saved_tracks_add(tracks=uri)
+                        if result5: stat.option_type = 'favorites'
                     else:
                         box_favorites = self.dbHandler.get_box_by_option_type('favorites')
                         if box_favorites:
                             if 'spotify:playlist' in box_favorites.data: 
-                                result = self.autofill_spotify_playlist(box_favorites.data,uri)
-                                if result: stat.option_type = 'favorites'
+                                result6 = self.autofill_spotify_playlist(box_favorites.data,uri)
+                                if result6: stat.option_type = 'favorites'
                             if 'm3u' in box_favorites.data :
                                 playlist = self.mopidyHandler.playlists.lookup(box_favorites.data)
                                 #for track in playlist.tracks:
@@ -1178,26 +1178,28 @@ class O2mToMopidy:
                                 #        result = self.autofill_spotify_playlist(track.uri,uri)
                                 #        if result: stat.option_type = 'favorites'
                                 if 'spotify:playlist' in playlist.tracks[0].uri :
-                                    result = self.autofill_spotify_playlist(playlist.tracks[0].uri,uri)
-                                    if result: stat.option_type = 'favorites'
+                                    result7 = self.autofill_spotify_playlist(playlist.tracks[0].uri,uri)
+                                    if result7: stat.option_type = 'favorites'
 
             #TRACK SKIPPED
             else:
                 #Remove track from playlist if skipped many times
                 if self.threshold_remove_track_playlist(stat,self.discover_level)==True and library_link !='':
-                    print (f"Trying to Trash track {stat.uri} from {library_link}")
+                    print (f"0. Trying to Trash track {stat.uri} from {library_link}")
                     #Adding to trash
                     box_trash = self.dbHandler.get_box_by_option_type('trash')
                     if box_trash:
                         if 'spotify:playlist' in box_trash.data: 
+                            print (f"1. Putting in Trash track {stat.uri}")
                             result = self.autofill_spotify_playlist(box_trash.data,uri)
 
                             #If trashed, let's trash it really
                             if result: 
+                                print (f"2. Putting in Trash track {stat.uri}")
                                 #self.spotifyHandler.remove_tracks_playlist(library_link, uri)
-                                result = self.remove_spotify_playlist(library_link,uri)
-                                if result: stat.option_type = 'new'
-                                if result:  print (f"Track trashed {stat.uri} from {library_link}")
+                                result2 = self.remove_spotify_playlist(library_link,uri)
+                                if result2: stat.option_type = 'new'
+                                if result2:  print (f"3. Track trashed {stat.uri} from {library_link}")
                                 #stat.option_type = 'trash'
 
                         '''
@@ -1216,14 +1218,14 @@ class O2mToMopidy:
                 if self.threshold_removing_favorites(stat,self.discover_level)==True:
                     print(f"Removing Favorites")
                     if self.username !=None:
-                        result = self.spotifyHandler.current_user_saved_tracks_delete(tracks=uri)
-                        if result: stat.option_type = 'normal'
+                        result3 = self.spotifyHandler.current_user_saved_tracks_delete(tracks=uri)
+                        if result3: stat.option_type = 'normal'
                     else:
                         box_favorites = self.dbHandler.get_box_by_option_type('favorites')
                         if box_favorites:
                             if 'spotify:playlist' in box_favorites.data: 
-                                result = self.remove_spotify_playlist(box_favorites.data,uri)
-                                if result: stat.option_type = 'normal'
+                                result4 = self.remove_spotify_playlist(box_favorites.data,uri)
+                                if result4: stat.option_type = 'normal'
                             if 'm3u' in box_favorites.data :
                                 playlist = self.mopidyHandler.playlists.lookup(box_favorites.data)
                                 #for track in playlist.tracks:
@@ -1231,8 +1233,8 @@ class O2mToMopidy:
                                 #        result = self.autofill_spotify_playlist(track.uri,uri)
                                 #        if result: stat.option_type = 'favorites'
                                 if 'spotify:playlist' in playlist.tracks[0].uri :
-                                    result = self.remove_spotify_playlist(playlist.tracks[0].uri,uri)
-                                    if result: stat.option_type = 'normal'
+                                    result5 = self.remove_spotify_playlist(playlist.tracks[0].uri,uri)
+                                    if result5: stat.option_type = 'normal'
 
         print(f"\n\nUpdate and Fix {fix} stat track {stat}\n\n")
         stat.update()
