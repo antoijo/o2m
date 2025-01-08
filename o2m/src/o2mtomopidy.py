@@ -470,9 +470,9 @@ class O2mToMopidy:
             max_result1 = int(round((-0.1*discover_level+7)/30*max_results))
             print(f"\nAUTO : Playlist {max_result1} tracks\n")
             #Iterate on tracks to add_track with uri and library_link
-            pl_tracks = self.spotifyHandler.get_playlists_tracks(max_result1,discover_level)
+            pl_tracks,lib_link = self.spotifyHandler.get_playlists_tracks(max_result1,discover_level)
             for key, pl_track in pl_tracks.items():
-                self.add_tracks(active_box, uris=pl_track[0], max_results=1, force_option_type="normal", library_link=pl_track[1])
+                self.add_tracks(active_box, uris=pl_track, max_results=1, force_option_type="normal", library_link=lib_link[key])
             
             #return tracklist_uris
         except Exception as val_e: 
@@ -1245,7 +1245,8 @@ class O2mToMopidy:
         playlist_id = playlist_uri.split(":")[2]
         track_id = uri[0].split(":")[2]
         try:
-            result = self.spotifyHandler.playlist_remove_all_occurrences_of_items(playlist_id, track_id)
+            #https://github.com/spotipy-dev/spotipy/issues/763
+            result = self.spotifyHandler.sp.playlist_remove_all_occurrences_of_items(playlist_id, uri)
             return (result)
         except Exception as val_e: 
             print(f"Erreur : {val_e}")        

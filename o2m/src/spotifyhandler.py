@@ -149,7 +149,7 @@ class SpotifyHandler:
                             #track = random.choice(tracks['items'])
                             #track = tracks[0:1]
                             #t_list.append(track['uri'])
-        return t_list,lib_link
+        return (t_list,lib_link)
 
 ################### ALBUMS  #############################
 
