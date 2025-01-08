@@ -276,7 +276,7 @@ class O2mToMopidy:
         if force_option_type != None: 
             option_type=force_option_type
         length = 0
-        
+
         if isinstance(uris, list):
             if len(uris) > 0:
                 #Inits
@@ -331,7 +331,8 @@ class O2mToMopidy:
                             #Removing double tracks in trackslit
                             #if t.track.uri in self.mopidyHandler.tracklist.get_tracks().uri:uris_rem.append(t.track.uri)
 
-                    self.mopidyHandler.tracklist.remove({"uri": uris_rem})
+                    if len(uris_rem)>0:
+                        self.mopidyHandler.tracklist.remove({"uri": uris_rem})
 
                     #Adding common and library tracks
                     '''discover_level = self.get_option_for_box(active_box, "option_discover_level")
@@ -357,7 +358,6 @@ class O2mToMopidy:
                         self.mopidyHandler.tracklist.remove(
                             {"tlid": [x.tlid for x in slice1]}
                         )  # to be optimized ?
-
                     # Update Box Values : Tldis and Uris
                     new_length = self.mopidyHandler.tracklist.get_length()
                     slice2 = self.mopidyHandler.tracklist.slice(prev_length, new_length)
@@ -393,13 +393,15 @@ class O2mToMopidy:
                     
                     # Shuffle complete computed tracklist if more than two boxs
                     #self.shuffle_tracklist(current_index + 1, new_length)
-                    if (len(self.activeboxs) > 1 or active_box.option_sort=="shuffle") and not((option_type == "info") and (new_length - prev_length==1)):
+                    if (len(self.activeboxs) > 1 or active_box.option_sort=="shuffle") and not((option_type == "info") and (new_length - prev_length==1)) and (current_index > 1):
                         self.shuffle_tracklist(current_index + 1, new_length)
+                   
                     #Move at next place the lastinfo content
                     if ((option_type == "info") and (new_length - prev_length==1)):
                         index = self.mopidyHandler.tracklist.index(tl_track=tltracks_added[0])
                         self.mopidyHandler.tracklist.move(index, index, current_index+1)
-                #print(f"\nTracks added to Box {box} with option_types {box.option_types} and library_link {box.library_link} \n")
+                    
+                    #print(f"\nTracks added to Box {box} with option_types {box.option_types} and library_link {box.library_link} \n")
         return (length)
 
 
@@ -407,7 +409,6 @@ class O2mToMopidy:
         #box is the active box in memory and box1,2.. the database contents of boxes
         try:
             print (f"DL AUTO : {discover_level}")
-            
             #GO QUICKLY
             self.quicklaunch_auto(1,discover_level,active_box)
 
@@ -465,16 +466,15 @@ class O2mToMopidy:
             else:
                 print(f"\nAUTO : Artists {max_result1} tracks\n")
                 self.add_tracks(active_box, self.spotifyHandler.get_my_artists_tracks(max_result1,discover_level), max_result1, "normal","spotify:artist")
-            
+
             #Playlists n=(-0.2*d+7)/30
             max_result1 = int(round((-0.1*discover_level+7)/30*max_results))
             print(f"\nAUTO : Playlist {max_result1} tracks\n")
             #Iterate on tracks to add_track with uri and library_link
             pl_tracks,lib_link = self.spotifyHandler.get_playlists_tracks(max_result1,discover_level)
-            for key, pl_track in pl_tracks.items():
-                self.add_tracks(active_box, uris=pl_track, max_results=1, force_option_type="normal", library_link=lib_link[key])
-            
-            #return tracklist_uris
+            for i in range(len(pl_tracks)):
+                uris = [pl_tracks[i]]
+                self.add_tracks(active_box, uris=uris, max_results=1, force_option_type="normal", library_link=lib_link[i])
         except Exception as val_e: 
             print(f"Erreur : {val_e}")
 
