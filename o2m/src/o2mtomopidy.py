@@ -1163,7 +1163,7 @@ class O2mToMopidy:
                 if self.threshold_adding_favorites(stat,self.discover_level)==True :
                     print(f"Autofilling Favorites")
                     if self.username !=None:
-                        result5 = self.spotifyHandler.current_user_saved_tracks_add(tracks=uri)
+                        result5 = self.spotifyHandler.sp.current_user_saved_tracks_add(tracks=uri)
                         if result5: stat.option_type = 'favorites'
                     else:
                         box_favorites = self.dbHandler.get_box_by_option_type('favorites')
@@ -1218,7 +1218,7 @@ class O2mToMopidy:
                 if self.threshold_removing_favorites(stat,self.discover_level)==True:
                     print(f"Removing Favorites")
                     if self.username !=None:
-                        result3 = self.spotifyHandler.current_user_saved_tracks_delete(tracks=uri)
+                        result3 = self.spotifyHandler.sp.current_user_saved_tracks_delete(tracks=uri)
                         if result3: stat.option_type = 'normal'
                     else:
                         box_favorites = self.dbHandler.get_box_by_option_type('favorites')
@@ -1261,7 +1261,7 @@ class O2mToMopidy:
                 track_id = uri[0].split(":")[2]
                 if self.spotifyHandler.is_track_in_playlist(self.username,track_id,playlist_id) == False:
                     print (f"Auto Filling playlist with self.username: {self.username}, playlist: {playlist_uri}, track.uri: {uri}")
-                    result = self.spotifyHandler.add_tracks_playlist(self.username, playlist_uri, uri)
+                    result = self.spotifyHandler.sp.add_tracks_playlist(self.username, playlist_uri, uri)
                 else: result = 'already in'
                 return (result)
         except Exception as val_e: 
