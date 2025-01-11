@@ -203,6 +203,11 @@ if __name__ == "__main__":
             return "no track"'''
 
     #RESTART
+    @api.route('/api/toogle_play')
+    def api_toogle_play():
+        o2mHandler.play_or_resume()
+        return ("play !")
+    
     @api.route('/api/reset_o2m')
     def api_reset_o2m():
         o2mHandler.starting_mode(True,True)
