@@ -94,7 +94,7 @@ class O2mToMopidy:
 
     def stats_average(self):
         stats = {}
-        for i in {'new','normal','incoming','favorites'}:
+        for i in {'new','normal','incoming','favorites','hidden'}:
             stats2 = {}
             for j in {'read_end','read_count','read_count_end'}:
                 stats2[j]=self.dbHandler.get_avg_stat(option_type=i,column=j)
@@ -1070,10 +1070,11 @@ class O2mToMopidy:
             stat.skipped_count = stat.read_count - stat.read_count_end #Fix
 
         #Avoid downgrade of option types in DB
-        if not(option_type == 'new' and (stat.option_type == 'normal' or stat.option_type == 'favorites' or stat.option_type == 'incoming' or stat.option_type == 'hidden' or stat.option_type == 'trash')):
+        #Due to many possibilities of change, we remove it and follow the flow !
+        '''if not(option_type == 'new' and (stat.option_type == 'normal' or stat.option_type == 'favorites' or stat.option_type == 'incoming' or stat.option_type == 'hidden' or stat.option_type == 'trash')):
             #if not(option_type == 'normal' and (stat.option_type == 'favorites' or stat.option_type == 'incoming')):
             if not(option_type == 'incoming' and (stat.option_type == 'normal' or stat.option_type == 'favorites')):
-                stat.option_type = option_type
+                stat.option_type = option_type'''
 
         #Check if there is a stat pb to fix 
         if (stat.read_end == 0): stat.read_end = 0.01
@@ -1261,7 +1262,7 @@ class O2mToMopidy:
                 track_id = uri[0].split(":")[2]
                 if self.spotifyHandler.is_track_in_playlist(self.username,track_id,playlist_id) == False:
                     print (f"Auto Filling playlist with self.username: {self.username}, playlist: {playlist_uri}, track.uri: {uri}")
-                    result = self.spotifyHandler.sp.add_tracks_playlist(self.username, playlist_uri, uri)
+                    result = self.spotifyHandler.sp.user_playlist_add_tracks(self.username, playlist_id, uri)
                 else: result = 'already in'
                 return (result)
         except Exception as val_e: 
@@ -1282,7 +1283,7 @@ class O2mToMopidy:
         result = False
         ratio = 1+(1-discover_level/20)
         #if stat.option_type=="normal" and (stat.read_end > self.avg_stats['favorites']['read_end']) and (stat.read_count >= self.avg_stats['favorites']['read_count']): 
-        if stat.option_type=="normal" and (stat.read_end*stat.read_count > ratio*self.avg_stats['favorites']['read_end']*self.avg_stats['favorites']['read_count']) and (stat.read_count >= self.avg_stats['favorites']['read_count']): 
+        if stat.option_type=="normal" and (stat.read_end*stat.read_count > ratio*float(self.avg_stats['favorites']['read_end'])*float(self.avg_stats['favorites']['read_count')]) and (stat.read_count >= self.avg_stats['favorites']['read_count']): 
             result=True
         return result
     
@@ -1302,6 +1303,8 @@ class O2mToMopidy:
             if (stat.read_end < self.avg_stats['normal']['read_end']) and (stat.read_count >= self.avg_stats['normal']['read_count']): result=True
         elif stat.option_type=="incoming":
             if (stat.read_end < self.avg_stats['incoming']['read_end']) and (stat.read_count >= self.avg_stats['incoming']['read_count']): result=True
+        elif stat.option_type=="hidden":
+            if (stat.read_end < self.avg_stats['hidden']['read_end']) and (stat.read_count >= self.avg_stats['hidden']['read_count']): result=True
         return result
 
 #   MISC FUNCTIONS
