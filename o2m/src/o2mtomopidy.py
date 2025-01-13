@@ -1283,7 +1283,7 @@ class O2mToMopidy:
         result = False
         ratio = 1+(1-discover_level/20)
         #if stat.option_type=="normal" and (stat.read_end > self.avg_stats['favorites']['read_end']) and (stat.read_count >= self.avg_stats['favorites']['read_count']): 
-        if stat.option_type=="normal" and (stat.read_end*stat.read_count > ratio*float(self.avg_stats['favorites']['read_end'])*float(self.avg_stats['favorites']['read_count')]) and (stat.read_count >= self.avg_stats['favorites']['read_count']): 
+        if stat.option_type=="normal" and (stat.read_end*stat.read_count > ratio*float(self.avg_stats['favorites']['read_end'])*float(self.avg_stats['favorites']['read_count'])) and (stat.read_count >= self.avg_stats['favorites']['read_count']): 
             result=True
         return result
     
